@@ -96,7 +96,11 @@ if (manifest.artifact !== undefined) {
 }
 
 const source = manifest.source ?? {}
-check('source repository is the plugin repository', source.repository, `https://github.com/Ebony-Vinyl/${pkg.name}`)
+// The repository is named after the project, not after the npm specifier: a
+// package published under a scope keeps the unscoped repository name, so this
+// had to compare the bare half of `pkg.name`. With the full specifier here, no
+// scoped artifact could ever satisfy the check.
+check('source repository is the plugin repository', source.repository, `https://github.com/Ebony-Vinyl/${pkg.name.split('/').pop()}`)
 check('source revision is a full commit sha', /^[0-9a-f]{40}$/.test(source.revision ?? ''), true)
 // The revision names the most recent commit that touched the release content —
 // package.json plus everything in the `files` list, exactly the set the

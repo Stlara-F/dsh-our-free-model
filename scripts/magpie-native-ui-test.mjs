@@ -15,6 +15,7 @@ import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
 import { hasEnginePayload, materializeEngine } from '../src/engine-payload.js'
+import { packageName } from './lib/package-identity.mjs'
 
 const repository = fileURLToPath(new URL('../', import.meta.url))
 const require = createRequire(import.meta.url)
@@ -146,8 +147,8 @@ async function packagePlugin() {
   assert.equal(report.package.engineRestoredSha256, engineEntry.sha256, 'Restored engine binary does not match its manifest')
   write(path.join(profile, 'package.json'), json({
     name: 'ofm-magpie-native-acceptance', private: true,
-    dependencies: { 'dsh-our-free-model': `file:${archive.replaceAll('\\', '/')}` },
-    dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'dsh-our-free-model'] } },
+    dependencies: { [packageName]: `file:${archive.replaceAll('\\', '/')}` },
+    dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', packageName] } },
   }))
   write(path.join(profile, 'cordis.yml'), '[]\n')
   write(path.join(profile, 'cordis.patch.yml'), [

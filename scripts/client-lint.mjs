@@ -11,6 +11,7 @@
  * Run: node scripts/client-lint.mjs
  */
 import fs from 'node:fs'
+import { packageName } from './lib/package-identity.mjs'
 
 const source = fs.readFileSync(new URL('../client.js', import.meta.url), 'utf8')
 
@@ -47,7 +48,7 @@ if (!source.includes("ReactDOM.createPortal") || !source.includes("data-ofm-anno
 if (record === undefined) {
   problems.push('the bundle never registered itself with the module loader')
 } else {
-  if (record.id !== 'dsh-our-free-model') problems.push(`registered id "${record.id}" must equal the package name`)
+  if (record.id !== packageName) problems.push(`registered id "${record.id}" must equal the package name "${packageName}"`)
   if (typeof record.factory !== 'function') problems.push('factory is not a function')
   else {
     const exports = record.factory(name => {

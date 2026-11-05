@@ -18,6 +18,7 @@ import crypto from 'node:crypto'
 import assert from 'node:assert/strict'
 import { parseVersion, compareVersions, parseManifest, fileUrlOf, downloadManifest, parseUploadPackRefs, PluginUpdater, stageRelease, verifyStaged, backupPackage, restoreBackup, installStaged, verifyInstalled, isPackageManagerOwned, signManifest, verifyManifestSignature, stableStringify, DEFAULT_MANIFEST_SOURCES, PINNED_MANIFEST_PUBLIC_KEY, packageUsesHardLinks, installationIsManaged } from '../src/updater.js'
 import { entryUrlOf, packageUrlOf, selfReload } from '../src/reload.js'
+import { packageName, pnpmDepKey, tarballStem, installedPath } from './lib/package-identity.mjs'
 const CONTROLLED_DEFAULTS = ['http://127.0.0.1:1/never.json']
 
 let failures = 0
@@ -50,7 +51,7 @@ await checkAsync('package-manager hard links are treated as managed installation
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-hardlink-'))
   try {
     const store = path.join(directory, 'store.js')
-    const packageDir = path.join(directory, 'node_modules', 'dsh-our-free-model')
+    const packageDir = path.join(directory, 'node_modules', packageName)
     fs.mkdirSync(packageDir, { recursive: true })
     fs.writeFileSync(store, 'shared package bytes')
     for (const rel of ['package.json', 'index.js', 'client.js']) fs.linkSync(store, path.join(packageDir, rel))
@@ -935,13 +936,13 @@ await checkAsync('legacy rollback receipts containing Rust caches restore only p
 
 // ── package-manager ownership (issue #335) ───────────────────────────────────
 // The desktop "real directory" install adds the plugin to the profile's
-// `dependencies`, so pnpm owns `<profile>/node_modules/dsh-our-free-model`.
+// `dependencies`, so pnpm owns the package directory under `<profile>/node_modules`.
 // With the default `distribution: self` the in-app upgrader would be a second
 // writer on that directory; it must refuse instead of corrupting the install.
 // Both signals are read beside the profile root, two levels above the package.
 function makeProfilePackage(version = OLD) {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'ofm-profile-'))
-  const pkg = path.join(profile, 'node_modules', 'dsh-our-free-model')
+  const pkg = path.join(profile, 'node_modules', packageName)
   fs.mkdirSync(pkg, { recursive: true })
   for (const [rel, body] of Object.entries(version === OLD ? oldFiles : newFiles)) {
     const target = path.join(pkg, rel)
@@ -958,9 +959,9 @@ const PNPM_LOCKFILE = [
   '',
   '  .:',
   '    dependencies:',
-  '      dsh-our-free-model:',
-  '        specifier: file:../dsh-our-free-model-2.3.0.tgz',
-  '        version: file:../dsh-our-free-model-2.3.0.tgz',
+  `      ${pnpmDepKey()}:`,
+  `        specifier: file:../${tarballStem()}-2.3.0.tgz`,
+  `        version: file:../${tarballStem()}-2.3.0.tgz`,
   '',
 ].join('\n')
 check('signal 1: a pnpm-lock.yaml specifier for the package marks it as pnpm-owned', () => {
@@ -976,7 +977,7 @@ check('signal 2: a hoistedLocations entry in .modules.yaml marks it as pnpm-owne
     fs.writeFileSync(path.join(profile, 'node_modules', '.modules.yaml'), JSON.stringify({
       layoutVersion: 5,
       nodeLinker: 'hoisted',
-      hoistedLocations: { 'dsh-our-free-model@file:../dsh-our-free-model-2.3.0.tgz': ['node_modules/dsh-our-free-model'] },
+      hoistedLocations: { [`${packageName}@file:../${tarballStem()}-2.3.0.tgz`]: [installedPath()] },
     }, undefined, 2))
     assert.equal(isPackageManagerOwned(pkg), true)
   } finally { fs.rmSync(profile, { recursive: true, force: true }) }
@@ -1008,9 +1009,9 @@ check('a link: specifier is not byte ownership (pnpm owns the junction, not the 
       '',
       '  .:',
       '    dependencies:',
-      '      dsh-our-free-model:',
-      '        specifier: link:vendor/dsh-our-free-model',
-      '        version: link:vendor/dsh-our-free-model',
+      `      ${pnpmDepKey()}:`,
+      `        specifier: link:vendor/${packageName}`,
+      `        version: link:vendor/${packageName}`,
       '',
     ].join('\n'))
     assert.equal(isPackageManagerOwned(pkg), false, 'a link: specifier records no bytes for pnpm to own')

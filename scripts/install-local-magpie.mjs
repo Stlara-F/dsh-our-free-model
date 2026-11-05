@@ -11,7 +11,10 @@ const target = fs.realpathSync('C:/Users/HUAWEI/.dsh/profiles/desktop/node_modul
 const hash = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
 const pkg = JSON.parse(fs.readFileSync(path.join(source, 'package.json'), 'utf8'))
 const previous = JSON.parse(fs.readFileSync(path.join(target, 'package.json'), 'utf8'))
-if (pkg.name !== 'dsh-our-free-model' || previous.name !== pkg.name) throw new Error('Unexpected plugin installation')
+// The invariant is that the target installation is this same plugin, which
+// `previous.name !== pkg.name` already decides. Naming the package a second time
+// here only refused installs of a correctly renamed build.
+if (previous.name !== pkg.name) throw new Error(`Unexpected plugin installation: target is ${previous.name}, this workspace is ${pkg.name}`)
 const accepted = JSON.parse(fs.readFileSync(path.join(source, '.verify/magpie-native-ui/latest.json'), 'utf8'))
 if (!accepted.passed) throw new Error('Native acceptance has not passed')
 for (const [file, expected] of [
