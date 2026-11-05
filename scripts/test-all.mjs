@@ -44,6 +44,7 @@ const suites = [
   ['engine-payload', 'engine-payload-test.mjs', []],
   ['release-preparation', 'release-preparation-test.mjs', []],
   ['client-lint', 'client-lint.mjs', []],
+  ['package-identity', 'package-identity-test.mjs', []],
   ['sponsor', 'sponsor-test.mjs', []],
   ['heatmap', 'heatmap-test.mjs', []],
   ['trust', 'trust-test.mjs', []],
